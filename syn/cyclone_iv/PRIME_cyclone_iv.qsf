@@ -141,5 +141,4 @@ set_global_assignment -name SYSTEMVERILOG_FILE ../../src/arithmetic/parallel_gf_
 set_global_assignment -name SYSTEMVERILOG_FILE ../../src/arithmetic/serial_add.sv.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../src/arithmetic/serial_gf_mult.sv.sv
 
-
-set_global_assignment -name PRIME_cyclone_iv.sdc
+set_global_assignment -name SDC_FILE PRIME_cyclone_iv.sdc
