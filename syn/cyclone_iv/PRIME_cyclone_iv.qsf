@@ -125,23 +125,21 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_clk_out
 set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_we_n_out
 set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_cs_n_out
 
+set_global_assignment -name QIP_FILE ../../ip/clk_skew_pll/clk_skew_pll.qip
+set_global_assignment -name QIP_FILE ../../ip/instruction_dp_ram/instruction_dp_ram.qip
+set_global_assignment -name QSYS_FILE ../../ip/NIOS_Top/NIOS_Top.qsys
+set_global_assignment -name QIP_FILE ../../ip/NIOS_Top/synthesis/NIOS_Top.qip
+set_global_assignment -name QIP_FILE ../../ip/SRAM_emu/SRAM_emu.qip
+
 
 set_global_assignment -name VERILOG_FILE ../../src/prime_top/prime_cyclone_iv_top.v
+set_global_assignment -name SYSTEMVERILOG_FILE ../../src/prime_datapath/prime_datapath.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../src/prime_datapath/rw_control.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../src/prime_datapath_prom/prime_datapath_prom.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../src/prime_datapath_prom/rw_control_prom.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../src/arithmetic/parallel_gf_mult.sv.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../src/arithmetic/serial_add.sv.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../src/arithmetic/serial_gf_mult.sv.sv
 
 
-#set_global_assignment -name SYSTEMVERILOG_FILE "SRC/IMC-Emu/src/rw_control.sv"
-#set_global_assignment -name SYSTEMVERILOG_FILE "SRC/IMC-Emu/src/cc_datapath.sv"
-#set_global_assignment -name SYSTEMVERILOG_FILE SRC/rw_control_prom.sv
-#set_global_assignment -name SYSTEMVERILOG_FILE SRC/cc_datapath_prom.sv
-#set_global_assignment -name QIP_FILE "SRC/IMC-Emu/ip/SRAM_emu.qip"
-#set_global_assignment -name SYSTEMVERILOG_FILE "SRC/IMC-Emu/src/serial_gf_mult.sv"
-#set_global_assignment -name SYSTEMVERILOG_FILE "SRC/IMC-Emu/src/parallel_gf_mult.sv"
-#set_global_assignment -name SYSTEMVERILOG_FILE SRC/avalon_mm_translator.sv
-#set_global_assignment -name QIP_FILE NIOS_Top/synthesis/NIOS_Top.qip
-#set_global_assignment -name QSYS_FILE NIOS_Top.qsys
-
-#set_global_assignment -name SDC_FILE SDC1.sdc
-#set_global_assignment -name QIP_FILE IP/clk_skew_pll.qip
-
-#set_global_assignment -name QIP_FILE IP/instruction_dp_ram.qip
-
+set_global_assignment -name PRIME_cyclone_iv.sdc
