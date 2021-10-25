@@ -112,12 +112,15 @@ typedef enum logic [OP_FIELD_WIDTH-1:0] {
                             
                             ADDS1       = 8'h0F,
                             SCIN        = 8'h10,
+                            XNOR1       = 8'h11,
                             
                             
 
 
                             EXT_READ_1  = 8'h80,
                             EXT_READ_2  = 8'h81,
+                            
+                            XNOR2       = 8'hEE,
                             
                             ADDS2       = 8'hEF,
                             //ADDS3       = 8'hEF,
@@ -666,6 +669,28 @@ ANDR currently removed for 32 bit version due to expanded mask field
                 next_load_carry         = 1'b1;
                 next_carry              = {24'h00_0000,latched_command[23:16]}; //Pad with zeros for now. Need differenc SCIN mechanism to work with 32-bit
 
+                next_state = IDLE;
+            end
+
+
+
+        XNOR1 :
+            begin
+                next_addr_a         = latched_command[23:16];
+                next_addr_b         = latched_command[15:8];
+                
+                next_compute_sel    = 64'hAAAAAAAAAAAAAAAA;
+                next_read_sel       = 4'h7;
+                next_sel_ff         = 1'b0;
+                
+                next_state  = XORC2;
+            end
+        XNOR2 :
+            begin
+                
+                next_addr_b = latched_command[7:0];
+                next_wren_b = 1'b1;
+                
                 next_state = IDLE;
             end
 
