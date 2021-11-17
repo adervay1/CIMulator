@@ -114,11 +114,15 @@ typedef enum logic [OP_FIELD_WIDTH-1:0] {
                             SCIN        = 8'h10,
                             XNOR1       = 8'h11,
                             
+                            CRSHIFT_1   = 8'h12,
+                            
                             
 
 
                             EXT_READ_1  = 8'h80,
                             EXT_READ_2  = 8'h81,
+                            
+                            CRSHIFT_2   = 8'hED,
                             
                             XNOR2       = 8'hEE,
                             
@@ -693,6 +697,31 @@ ANDR currently removed for 32 bit version due to expanded mask field
                 
                 next_state = IDLE;
             end
+
+
+
+        CRSHIFT_1 :
+            begin
+                next_addr_a = latched_command[23:16];
+                next_data_b = '0;
+                
+                next_sel_ff         = 1'b0;
+                
+                next_read_sel       = 4'h9;
+                next_compute_sel    = '1;
+                next_shift_amount   = {'0,latched_command[1:0]};
+                
+                next_state = CRSHIFT_2;
+            end
+        CRSHIFT_2 :
+            begin
+                next_addr_a = latched_command[23:16];
+                next_addr_b = latched_command[15:8];
+                next_wren_b = 1'b1;
+                
+                next_state = IDLE;
+            end
+
 
 
 

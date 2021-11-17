@@ -65,6 +65,8 @@ logic           update_carry;
 logic [31:0]    carry;
 logic           load_carry;
 
+logic [31:0]    cshift;
+
 
 `ifdef MODEL_TECH
 
@@ -224,6 +226,7 @@ always_comb begin
         //4'h6    : read_op_mux = serial_gf_product;
         4'h7    : read_op_mux = ~compute_op_mux;  //Logical Inverse
         4'h8    : read_op_mux = adder_data;  //Technically doesn't belong on the "read" mux but this is a good place
+        4'h9    : read_op_mux = cshift;     // 4 Column circular shift Left
         default : read_op_mux = '0;
     endcase
 end
@@ -261,6 +264,13 @@ serial_gf_mult  serial_gf_mult_inst (
     .xor_in             (bitline_xor),
     .sum_out            (adder_data)
 );
+
+circular_shift circular_shift_inst (
+    .byte_in        (compute_op_mux),
+    .cshift_out     (cshift),
+    .shift_amt_in   (shift_amount)
+);
+
 
 endmodule
 
