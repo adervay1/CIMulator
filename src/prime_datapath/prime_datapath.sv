@@ -100,7 +100,7 @@ SRAM_emu    SRAM_emu_inst (
 
 
 rw_control #(
-    .SRAM_ADDR_WIDTH    (CIM_ADDR_WIDTH)
+    .SRAM_ADDR_WIDTH    (CIM_ADDR_WIDTH),
     .AVALON_ADDR_WIDTH  (AVALON_ADDR_WIDTH)
 ) rw_control_inst (
     .compute_data_in    (read_op_mux),
