@@ -14,7 +14,7 @@ module prime_cyclone_iv_top (
     
 );
 
-
+import CIMulator_PKG::*;
 
 wire          avalon_mm_waitrequest;
 wire [31:0]   avalon_mm_readdata;
@@ -43,7 +43,8 @@ wire [31:0]   avalon_mm_2_readdata;
 wire          avalon_mm_2_readdatavalid;
 
 wire [31:0]    avalon_mm_2_writedata;
-wire [8:0]     avalon_mm_2_address;
+//Avalon bus include additional address bit to directly access memory or command CIM
+wire [CIM_ADDR_AV_WIDTH-1:0] avalon_mm_2_address;
 wire           avalon_mm_2_write;
 wire           avalon_mm_2_read;
 
@@ -168,7 +169,10 @@ prime_datapath_prom_inst (
 );
 
 
-prime_datapath prime_datapath_inst (
+prime_datapath #(
+    .AVALON_ADDR_WIDTH(CIM_ADDR_AV_WIDTH)
+)
+prime_datapath_inst (
     .sys_clk_in                 (sys_clk_in),
     .sys_reset_in               (1'b0),
 
