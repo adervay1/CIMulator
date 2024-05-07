@@ -10,7 +10,7 @@ endpackage
 package CIM_INST_PKG;
 
 localparam      OP_FIELD_WIDTH      = 5;
-localparam      PIM_ADDR_BITS       = 9;
+localparam      CIM_ADDR_BITS       = 9;
 
 localparam OP_H = 31;
 localparam OP_L = 27;
@@ -23,9 +23,9 @@ localparam D1_L = 0;
 
  typedef struct packed {
     bit [OP_FIELD_WIDTH-1:0]    op;
-    bit [PIM_ADDR_BITS-1:0]     s1;
-    bit [PIM_ADDR_BITS-1:0]     s2;
-    bit [PIM_ADDR_BITS-1:0]     d1;
-} pim_field_struct;
+    bit [CIM_ADDR_BITS-1:0]     s1;
+    bit [CIM_ADDR_BITS-1:0]     s2;
+    bit [CIM_ADDR_BITS-1:0]     d1;
+} cim_field_struct;
 
 endpackage

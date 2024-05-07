@@ -75,7 +75,7 @@ logic           mm_readdatavalid, next_mm_readdatavalid;
 
 logic           sel_ff, next_sel_ff;
 
-pim_field_struct    latched_command, next_latched_command;
+cim_field_struct    latched_command, next_latched_command;
 logic [SRAM_ADDR_WIDTH-1:0]     latched_addr, next_latched_addr;
 
 
