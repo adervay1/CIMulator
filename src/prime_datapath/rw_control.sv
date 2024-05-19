@@ -5,55 +5,51 @@
 //     For now this works fine just running a "batch" program without any instruction jump logic / HW.
 
 module rw_control # (
-    parameter PC_WIDTH = 8
+    parameter SRAM_ADDR_WIDTH   = 8,
+    parameter AVALON_ADDR_WIDTH = 9
 ) (
-    input [31:0]            compute_data_in,
-    input                   sys_clk_in,
-    input                   sys_reset_in,
+    input [31:0]                    compute_data_in,
+    input                           sys_clk_in,
+    input                           sys_reset_in,
     
-    output [7:0]            sram_addr_a_out,
-    output [7:0]            sram_addr_b_out,
+    output [SRAM_ADDR_WIDTH-1:0]    sram_addr_a_out,
+    output [SRAM_ADDR_WIDTH-1:0]    sram_addr_b_out,
     
-    output [31:0]           sram_data_a_out,
-    output [31:0]           sram_data_b_out,
-    
-    output                  sram_wren_a_out,
-    output                  sram_wren_b_out,
-    
-    output [63:0]           compute_sel_out,
-    output [3:0]            read_sel_out,
-    output [31:0]           bitline_mask_out,
-    output [4:0]            shift_amount_out,
-    output                  factor_sel_out,
-    output                  gf_mult_update_out,
-    output                  gf_mult_set_msb_out,
-    
-    output                  update_carry_out,
-    output [31:0]           carry_out,
-    output                  load_carry_out,
-    
-    //output [PC_WIDTH-1:0]   pc_out,
-    //input [31:0]            instructions_in [0:2]
+    output [31:0]                   sram_data_a_out,
+    output [31:0]                   sram_data_b_out,
+            
+    output                          sram_wren_a_out,
+    output                          sram_wren_b_out,
+            
+    output [63:0]                   compute_sel_out,
+    output [3:0]                    read_sel_out,
+    output [31:0]                   bitline_mask_out,
+    output [4:0]                    shift_amount_out,
+    output                          factor_sel_out,
+    output                          gf_mult_update_out,
+    output                          gf_mult_set_msb_out,
+            
+    output                          update_carry_out,
+    output [31:0]                   carry_out,
+    output                          load_carry_out,
 
     //Avalon mm signals
-    output          avalon_mm_waitrequest_out,
-    output [31:0]   avalon_mm_readdata_out,
-    output          avalon_mm_readdatavalid_out,
-
-    input [31:0]    avalon_mm_writedata_in,
-    input [8:0]     avalon_mm_address_in,
-    input           avalon_mm_write_in,
-    input           avalon_mm_read_in,
-    
-    input [31:0]     readback_data_in
+    output                          avalon_mm_waitrequest_out,
+    output [31:0]                   avalon_mm_readdata_out,
+    output                          avalon_mm_readdatavalid_out,
+                    
+    input [31:0]                    avalon_mm_writedata_in,
+    input [AVALON_ADDR_WIDTH-1:0]   avalon_mm_address_in,
+    input                           avalon_mm_write_in,
+    input                           avalon_mm_read_in,
+                        
+    input [31:0]                    readback_data_in
 );
 
+import CIM_INST_PKG::*;
 
-
-//logic [PC_WIDTH-1:0]        program_counter, next_program_counter;
-
-logic [7:0]     addr_a,  next_addr_a;
-logic [7:0]     addr_b,  next_addr_b;
+logic [SRAM_ADDR_WIDTH-1:0]     addr_a,  next_addr_a;
+logic [SRAM_ADDR_WIDTH-1:0]     addr_b,  next_addr_b;
 
 logic [31:0]     data_a,  next_data_a;
 logic [31:0]     data_b,  next_data_b;
@@ -63,7 +59,7 @@ logic           wren_b,  next_wren_b;
 
 logic [63:0]    compute_sel, next_compute_sel;
 logic [3:0]     read_sel, next_read_sel;
-logic [31:0]     bitline_mask, next_bitline_mask;
+logic [31:0]    bitline_mask, next_bitline_mask;
 logic [4:0]     shift_amount, next_shift_amount;
 logic           factor_sel, next_factor_sel;
 logic           gf_mult_set_msb, next_gf_mult_set_msb;
@@ -79,16 +75,12 @@ logic           mm_readdatavalid, next_mm_readdatavalid;
 
 logic           sel_ff, next_sel_ff;
 
-logic [31:0]    latched_command, next_latched_command;
-logic [7:0]     latched_addr, next_latched_addr;
+cim_field_struct    latched_command, next_latched_command;
+logic [SRAM_ADDR_WIDTH-1:0]     latched_addr, next_latched_addr;
 
-localparam      INSTRUCTION_WIDTH       = 32;
-localparam      MAX_INSTRUCTION_DEPTH   = 256;
-localparam      OP_FIELD_WIDTH      = 8;
 
-localparam      OP_LOW_IDX          = INSTRUCTION_WIDTH - OP_FIELD_WIDTH; //Used for bitselecting LSB of OPCODE field
-
-typedef enum logic [OP_FIELD_WIDTH-1:0] {  
+//Pick an arbitrary SM size, this doesn't depend on OP Code
+typedef enum logic [7:0] {  
                             IDLE        = 8'h1F,
                             LOAD        = 8'h00,
                             MOVE1       = 8'h01,
@@ -158,7 +150,6 @@ RW_STATES next_state;
 always_ff @ (posedge sys_clk_in or posedge sys_reset_in) begin
     if (sys_reset_in) begin
         state               <= IDLE;
-        //program_counter     <= '0;
         addr_a              <= '0;
         addr_b              <= '0;
         data_a              <= '0;
@@ -184,7 +175,6 @@ always_ff @ (posedge sys_clk_in or posedge sys_reset_in) begin
         latched_addr        <= '0;
     end else begin
         state               <= next_state;
-        //program_counter     <= next_program_counter;
         addr_a              <= next_addr_a;
         addr_b              <= next_addr_b;
         data_a              <= next_data_a;
@@ -215,7 +205,6 @@ end
 
 always_comb begin
     next_state              = state;
-    //next_program_counter    = program_counter;
     next_addr_a             = addr_a;
     next_addr_b             = addr_b;
     next_data_a             = data_a;
@@ -245,17 +234,24 @@ always_comb begin
             begin
                 next_mm_waitrequest = 1'b0;
                 if (avalon_mm_write_in) begin
-                    if (avalon_mm_address_in[8] == 1'b1) begin
+                    //If bit [8] from address [8-1:0] is set, load data to CIM
+                    if (avalon_mm_address_in[SRAM_ADDR_WIDTH] == 1'b1) begin
                         next_state = LOAD;
-                        next_latched_addr       = avalon_mm_address_in[7:0];
-                        next_latched_command    = avalon_mm_writedata_in;
+                        next_latched_addr       = avalon_mm_address_in[SRAM_ADDR_WIDTH-1:0];
+                        next_latched_command.op = avalon_mm_writedata_in[OP_H : OP_L];
+                        next_latched_command.s1 = avalon_mm_writedata_in[S1_H : S1_L];
+                        next_latched_command.s2 = avalon_mm_writedata_in[S2_H : S2_L];
+                        next_latched_command.d1 = avalon_mm_writedata_in[D1_H : D1_L];
                     end else begin
-                        next_state = RW_STATES'(avalon_mm_writedata_in[INSTRUCTION_WIDTH-1:OP_LOW_IDX]);
-                        next_latched_command = avalon_mm_writedata_in;
+                        next_state = RW_STATES'({'0,avalon_mm_writedata_in[OP_H : OP_L]});
+                        next_latched_command.op = avalon_mm_writedata_in[OP_H : OP_L];
+                        next_latched_command.s1 = avalon_mm_writedata_in[S1_H : S1_L];
+                        next_latched_command.s2 = avalon_mm_writedata_in[S2_H : S2_L];
+                        next_latched_command.d1 = avalon_mm_writedata_in[D1_H : D1_L];
                     end
                 end else if (avalon_mm_read_in) begin
-                    next_addr_a             = avalon_mm_address_in[7:0];
-                    next_latched_addr       = avalon_mm_address_in[7:0];
+                    next_addr_a             = avalon_mm_address_in[SRAM_ADDR_WIDTH-1:0];
+                    next_latched_addr       = avalon_mm_address_in[SRAM_ADDR_WIDTH-1:0];
                     next_mm_readdatavalid   = 1'b0;
                     next_mm_readdata        = '0;
                     next_mm_waitrequest     = 1'b1;
@@ -310,7 +306,7 @@ always_comb begin
         //Move Instruction
         MOVE1 :
             begin
-                next_addr_a = latched_command[23:16];
+                next_addr_a = latched_command.s1;
                 next_data_b = '0;
                 
                 next_sel_ff         = 1'b0;
@@ -322,8 +318,8 @@ always_comb begin
             end
         MOVE2 :
             begin
-                next_addr_a = latched_command[23:16];
-                next_addr_b = latched_command[15:8];
+                next_addr_a = latched_command.s1;
+                next_addr_b = latched_command.s2;
                 next_wren_b = 1'b1;
                 
                 next_state = IDLE;
@@ -333,7 +329,7 @@ always_comb begin
 
         XORR1 :
             begin
-                next_addr_a = latched_command[23:16];
+                next_addr_a = latched_command.s1;
                 next_data_b = '0;
                 
                 next_sel_ff         = 1'b0;
@@ -345,8 +341,8 @@ always_comb begin
             end
         XORR2 :
             begin
-                next_addr_a = latched_command[23:16];
-                next_addr_b = latched_command[15:8];
+                next_addr_a = latched_command.s1;
+                next_addr_b = latched_command.s2;
                 next_wren_b = 1'b1;
                 
                 next_state = IDLE;
@@ -381,21 +377,21 @@ ANDR currently removed for 32 bit version due to expanded mask field
 
         LSHFT1 :
             begin
-                next_addr_a = latched_command[23:16];
+                next_addr_a = latched_command.s1;
                 next_data_b = '0;
                 
                 next_sel_ff         = 1'b0;
                 
                 next_read_sel       = 4'h3;
                 next_compute_sel    = '1;
-                next_shift_amount   = latched_command[4:0];
+                next_shift_amount   = latched_command.d1[4:0];
                 
                 next_state = LSHFT2;
             end
         LSHFT2 :
             begin
-                next_addr_a = latched_command[23:16];
-                next_addr_b = latched_command[15:8];
+                next_addr_a = latched_command.s1;
+                next_addr_b = latched_command.s2;
                 next_wren_b = 1'b1;
                 
                 next_state = IDLE;
@@ -405,21 +401,21 @@ ANDR currently removed for 32 bit version due to expanded mask field
 
         RSHFT1 :
             begin
-                next_addr_a = latched_command[23:16];
+                next_addr_a = latched_command.s1;
                 next_data_b = '0;
                 
                 next_sel_ff         = 1'b0;
                 
                 next_read_sel       = 4'h4;
                 next_compute_sel    = '1;
-                next_shift_amount   = latched_command[4:0];
+                next_shift_amount   = latched_command.d1[4:0];
                 
                 next_state = RSHFT2;
             end
         RSHFT2 :
             begin
-                next_addr_a = latched_command[23:16];
-                next_addr_b = latched_command[15:8];
+                next_addr_a = latched_command.s1;
+                next_addr_b = latched_command.s2;
                 next_wren_b = 1'b1;
                 
                 next_state = IDLE;
@@ -429,7 +425,7 @@ ANDR currently removed for 32 bit version due to expanded mask field
 
         P_INV_1 :
             begin
-                next_addr_a = latched_command[23:16];
+                next_addr_a = latched_command.s1;
                 next_data_b = '0;
                 
                 next_sel_ff         = 1'b0;
@@ -441,8 +437,8 @@ ANDR currently removed for 32 bit version due to expanded mask field
             end
         P_INV_2 :
             begin
-                next_addr_a = latched_command[23:16];
-                next_addr_b = latched_command[15:8];
+                next_addr_a = latched_command.s1;
+                next_addr_b = latched_command.s2;
                 next_wren_b = 1'b1;
                 
                 next_state = IDLE;
@@ -451,8 +447,8 @@ ANDR currently removed for 32 bit version due to expanded mask field
 
         ORC1 :
             begin
-                next_addr_a         = latched_command[23:16];
-                next_addr_b         = latched_command[15:8];
+                next_addr_a = latched_command.s1;
+                next_addr_b = latched_command.s2;
                 
                 next_compute_sel    = '0;
                 next_read_sel       = 4'h0;
@@ -462,7 +458,7 @@ ANDR currently removed for 32 bit version due to expanded mask field
             end
         ORC2 :
             begin
-                next_addr_b = latched_command[7:0];
+                next_addr_b = latched_command.d1;
                 next_wren_b = 1'b1;
                 
                 next_state = IDLE;
@@ -472,8 +468,8 @@ ANDR currently removed for 32 bit version due to expanded mask field
 
         ANDC1 :
             begin
-                next_addr_a         = latched_command[23:16];
-                next_addr_b         = latched_command[15:8];
+                next_addr_a = latched_command.s1;
+                next_addr_b = latched_command.s2;
                 
                 next_compute_sel    = 64'h5555555555555555;
                 next_read_sel       = 4'h0;
@@ -484,7 +480,7 @@ ANDR currently removed for 32 bit version due to expanded mask field
         ANDC2 :
             begin
                 
-                next_addr_b = latched_command[7:0];
+                next_addr_b = latched_command.d1;
                 next_wren_b = 1'b1;
                 
                 next_state = IDLE;
@@ -494,8 +490,8 @@ ANDR currently removed for 32 bit version due to expanded mask field
 
         XORC1 :
             begin
-                next_addr_a         = latched_command[23:16];
-                next_addr_b         = latched_command[15:8];
+                next_addr_a = latched_command.s1;
+                next_addr_b = latched_command.s2;
                 
                 next_compute_sel    = 64'hAAAAAAAAAAAAAAAA;
                 next_read_sel       = 4'h0;
@@ -506,7 +502,7 @@ ANDR currently removed for 32 bit version due to expanded mask field
         XORC2 :
             begin
                 
-                next_addr_b = latched_command[7:0];
+                next_addr_b = latched_command.d1;
                 next_wren_b = 1'b1;
                 
                 next_state = IDLE;
@@ -614,35 +610,10 @@ ANDR currently removed for 32 bit version due to expanded mask field
 
 
 
-        // ADDS1 :
-            // begin
-                // next_addr_a         = latched_command[23:16];
-                // next_addr_b         = latched_command[15:8];
-                
-                // next_compute_sel    = '1;
-                // next_read_sel       = 4'h8;
-                // next_sel_ff         = 1'b1;
-                
-                // next_state  = ADDS2;
-            // end
-        // ADDS2 :
-            // begin
-                // next_update_carry   = 1'b1;
-                // next_state  = ADDS3;
-            // end
-        // ADDS3 :
-            // begin
-                // next_addr_b = latched_command[7:0];
-                // next_data_b = compute_data_in;
-                
-                // next_wren_b = 1'b1;
-                
-                // next_state = IDLE;
-            // end
         ADDS1 :
             begin
-                next_addr_a         = latched_command[23:16];
-                next_addr_b         = latched_command[15:8];
+                next_addr_a = latched_command.s1;
+                next_addr_b = latched_command.s2;
                 
                 next_compute_sel    = '1;
                 next_read_sel       = 4'h8;
@@ -652,7 +623,7 @@ ANDR currently removed for 32 bit version due to expanded mask field
             end
         ADDS2 :
             begin
-                next_addr_b = latched_command[7:0];
+                next_addr_b = latched_command.d1;
                 
                 next_wren_b = 1'b1;
                 
@@ -667,7 +638,7 @@ ANDR currently removed for 32 bit version due to expanded mask field
         SCIN :
             begin
                 next_load_carry         = 1'b1;
-                next_carry              = {24'h00_0000,latched_command[23:16]}; //Pad with zeros for now. Need differenc SCIN mechanism to work with 32-bit
+                next_carry              = {24'h00_0000,latched_command.s1[7:0]}; //Pad with zeros for now. Need differenc SCIN mechanism to work with 32-bit
 
                 next_state = IDLE;
             end
@@ -676,8 +647,8 @@ ANDR currently removed for 32 bit version due to expanded mask field
 
         XNOR1 :
             begin
-                next_addr_a         = latched_command[23:16];
-                next_addr_b         = latched_command[15:8];
+                next_addr_a = latched_command.s1;
+                next_addr_b = latched_command.s2;
                 
                 next_compute_sel    = 64'hAAAAAAAAAAAAAAAA;
                 next_read_sel       = 4'h7;
@@ -688,7 +659,7 @@ ANDR currently removed for 32 bit version due to expanded mask field
         XNOR2 :
             begin
                 
-                next_addr_b = latched_command[7:0];
+                next_addr_b = latched_command.d1;
                 next_wren_b = 1'b1;
                 
                 next_state = IDLE;
@@ -731,8 +702,6 @@ assign carry_out            = carry;
 assign load_carry_out       = load_carry;
 
 
-
-//assign pc_out           = program_counter;
 
 assign avalon_mm_waitrequest_out    = mm_waitrequest;
 assign avalon_mm_readdata_out       = mm_readdata;

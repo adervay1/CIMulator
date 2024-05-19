@@ -132,7 +132,8 @@ set_global_assignment -name QIP_FILE ../../ip/NIOS_Top/synthesis/NIOS_Top.qip
 set_global_assignment -name QIP_FILE ../../ip/SRAM_emu/SRAM_emu.qip
 
 
-set_global_assignment -name VERILOG_FILE ../../src/prime_top/prime_cyclone_iv_top.v
+set_global_assignment -name SYSTEMVERILOG_FILE ../../src/prime_top/CIMulator_256_PKG.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../src/prime_top/prime_cyclone_iv_top.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../src/prime_datapath/prime_datapath.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../src/prime_datapath/rw_control.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../src/prime_datapath_prom/prime_datapath_prom.sv

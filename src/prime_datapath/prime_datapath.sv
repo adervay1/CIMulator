@@ -1,20 +1,21 @@
-module prime_datapath (
-    input           sys_clk_in,
-    input           sys_reset_in,
+module prime_datapath #(
+    parameter AVALON_ADDR_WIDTH = 8
+) (
+    input                           sys_clk_in,
+    input                           sys_reset_in,
     
-    output          IMC_mm_waitrequest_out,
-    output [31:0]   IMC_mm_readdata_out,
-    output          IMC_mm_readdatavalid_out,
+    output                          IMC_mm_waitrequest_out,
+    output [31:0]                   IMC_mm_readdata_out,
+    output                          IMC_mm_readdatavalid_out,
 
-    input [31:0]    IMC_mm_writedata_in,
-    input [8:0]     IMC_mm_address_in,
-    input           IMC_mm_write_in,
-    input           IMC_mm_read_in
+    input [31:0]                    IMC_mm_writedata_in,
+    input [AVALON_ADDR_WIDTH-1:0]   IMC_mm_address_in,
+    input                           IMC_mm_write_in,
+    input                           IMC_mm_read_in
 );
 
+import CIMulator_PKG::*;
 
-localparam PC_WIDTH         = 12;
-localparam INST_ROM_DEPTH   = 2**PC_WIDTH;
 
 logic [31:0] bitline_a;
 logic [31:0] bitline_a_n;
@@ -25,7 +26,7 @@ logic [31:0] bitline_logical;
 logic [31:0] bitline_n_logical;
 logic [31:0] bitline_xor;
 
-logic [64:0] compute_sel;
+logic [63:0] compute_sel;
 logic [3:0] read_sel;
 logic [31:0] compute_op_mux;
 logic [31:0] read_op_mux;
@@ -40,15 +41,12 @@ logic gf_mult_set_msb;
 logic [31:0] bitline_mask;
 logic [4:0] shift_amount;
 
-logic [7:0] sram_addr_a;
-logic [7:0] sram_addr_b;
+logic [CIM_ADDR_WIDTH-1:0] sram_addr_a;
+logic [CIM_ADDR_WIDTH-1:0] sram_addr_b;
 logic [31:0] sram_data_a;
 logic [31:0] sram_data_b;
 logic       sram_wren_a;
 logic       sram_wren_b;
-
-logic [32-1:0]  current_instructions [0:2];
-logic [PC_WIDTH-1:0]    program_counter;
 
 
 logic           avalon_mm_waitrequest;
@@ -69,7 +67,7 @@ logic           load_carry;
 `ifdef MODEL_TECH
 
 ram_model #(
-    .ADDR_WIDTH (8),
+    .ADDR_WIDTH (CIM_ADDR_WIDTH),
     .DATA_WIDTH (32),
     .VERBOSE    (1)
 ) ram_model_inst (
@@ -102,7 +100,8 @@ SRAM_emu    SRAM_emu_inst (
 
 
 rw_control #(
-    .PC_WIDTH           (PC_WIDTH)
+    .SRAM_ADDR_WIDTH    (CIM_ADDR_WIDTH),
+    .AVALON_ADDR_WIDTH  (AVALON_ADDR_WIDTH)
 ) rw_control_inst (
     .compute_data_in    (read_op_mux),
     .sys_clk_in         (sys_clk_in),
@@ -131,8 +130,6 @@ rw_control #(
     .load_carry_out         (load_carry),
     
     //Instruction memory signals
-    //.pc_out             (program_counter),
-    //.instructions_in    (current_instructions)
     .avalon_mm_waitrequest_out      (IMC_mm_waitrequest_out),
     .avalon_mm_readdata_out         (IMC_mm_readdata_out),
     .avalon_mm_readdatavalid_out    (IMC_mm_readdatavalid_out),
@@ -145,16 +142,6 @@ rw_control #(
     .readback_data_in               (bitline_a)
 );
 
-
-
-//Not implemented for NIOS Version
-/* instruction_rom #(
-    .INSTRUCTION_WIDTH  (32),
-    .PC_WIDTH           (PC_WIDTH)
-) instruction_rom_inst (
-    .pc_in              (program_counter),
-    .instructions_out   (current_instructions)   //Need to look two instuctions ahead. 1 for next fetch and two with extension field.
-); */
 
 
 //Create bitline not portion of diff SRAM pair
@@ -206,11 +193,6 @@ genvar i;
     end
 
 endgenerate
-
-// synthesis translate_off
-// assert (compute_sel !== 2'h3)
-    // else $warning("Compute Operation Mux set to Invalid State (%h), Check Instruction",compute_sel);
-// synthesis translate_on
 
 
 always_comb begin
